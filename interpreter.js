@@ -109,7 +109,7 @@ function ExpressionParser(grammar, interpreter, explicitExpression) {
         it.innerIterator = p.iterator;
         var alternative = grammar.alternatives[it.currentIndex];
         var name = (alternative.length == 1 && alternative[0].type == 'identifier') ?  alternative[0].value : undefined;
-        return { result: new st.Expression(null, { explicit: explicitExpression, sequence: p.result })/*{ type: 'alternative', explicitExpression: explicitExpression, alternativeIndex: it.currentIndex, name: name, value: p.result, length: p.result.length, str: p.result.str }*/, iterator: it };
+        return { result: new st.Expression(null, { explicit: explicitExpression, sequence: p.result }), iterator: it };
       }
       else {
         it.innerIterator = null;
@@ -157,7 +157,7 @@ function SequenceParser(grammar, interpreter) {
         stackTop().result = p.result;
         stackTop().it = p.iterator;
         if(it.stack.length >= items.length) {
-          return { result: it.stack.map(function(i, index) { return i.result }) /*{ type: 'sequence', str: it.stack.map(function(i) { return i.result.str }).join(''), sequence: it.stack.map(function(i, index) { return { name: itemName(index), result: i.result } }), length: stackTop().length + p.result.length }*/, iterator: it };
+          return { result: it.stack.map(function(i, index) { return i.result }) , iterator: it };
         }
         else {
           pushTop(p.result);
@@ -185,12 +185,12 @@ function GroupParser(grammar, interpreter) {
         var res = innerParser.parseNext(str, it.inner);
         if(res) {
           it.inner = res.iterator;
-          return { result: new st.Group(null, { inner: res.result })/*{ type: 'group', option: 'select', length: res.result.length, value: res.result, str: res.result.str, descriptor: grammar.descriptor }*/, iterator: it };
+          return { result: new st.Group(null, { inner: res.result }), iterator: it };
         }
         else {
           it.value = 'ignore';
           it.inner = null;
-          if(grammar.isOptional) return { /* type: 'group', ? */ result: new st.Group(null, { inner: null })/*{ type: 'group', option: 'ignore', length: 0, str: '' }*/, iterator: it };
+          if(grammar.isOptional) return { result: new st.Group(null, { inner: null }), iterator: it };
           else return;
         }
       case 'ignore': return;
@@ -213,7 +213,7 @@ function RepeatedTokenParser(grammar, interpreter) {
     while(it.stack == null || it.stack.length > 0) {
       if(it.stack == null) { // is it wise to test the '0' case first?
         it.stack = [{ length: 0, it: null }];
-        if(min == 0) return { result: new st.Repetition(null, { items: [] }) /*{ type: 'repeated-token', count: 0, items: [], length: 0, str: '' }*/, iterator: it };
+        if(min == 0) return { result: new st.Repetition(null, { items: [] }), iterator: it };
       }
       else {
         var p;
@@ -223,7 +223,7 @@ function RepeatedTokenParser(grammar, interpreter) {
           it.stack.push({ length: stackTop().length + p.result.length, it: null });
           var items = it.stack.map(function(x) { return x.result });
           items.pop();
-          if(count() >= min) return { result: new st.Repetition(null, { items: items })/*{ type: 'repeated-token', count: count(), items: items, length: stackTop().length, str: items.map(function(i) { return i.str }).join('') }*/, iterator: it };
+          if(count() >= min) return { result: new st.Repetition(null, { items: items }), iterator: it };
           else continue;
         }
         else {
@@ -255,7 +255,7 @@ function CharCodeParser(grammar) {
   this.parseNext = function(str, iterator) {
     if(iterator) return;
     if(str.charCodeAt(0) >= grammar.from && str.charCodeAt(0) <= grammar.to)
-      return { result: new st.StringOrChar(null, { value: str[0] }) /*{ type: 'charcode', value: str[0], length: 1, str: str[0] }*/, iterator: true };
+      return { result: new st.StringOrChar(null, { value: str[0] }), iterator: true };
   }
 }
 
@@ -265,11 +265,11 @@ function StringLiteralParser(grammar) {
   this.parse = function(str) { //TODO: deprecated
     var begin = str.substr(0,grammar.value.length);
     if(grammar.caseSensitive) {
-      if(begin == grammar.value) return new st.StringOrChar(null, { value: begin }); //{ type: 'string', pattern: grammar.value, value: begin, length: begin.length, str: begin };
+      if(begin == grammar.value) return new st.StringOrChar(null, { value: begin });
       else return;
     }
     else {
-      if(begin.toLowerCase() == grammar.value.toLowerCase()) return new st.StringOrChar(null, { value: begin }); //{ type: 'string', pattern: grammar.value, value: begin, length: begin.length, str: begin };
+      if(begin.toLowerCase() == grammar.value.toLowerCase()) return new st.StringOrChar(null, { value: begin });
       else return;
     }
   }
@@ -280,48 +280,5 @@ function StringLiteralParser(grammar) {
     if(res) return { result: res, iterator: true };
   }
 }
-
-/*function generateDescriptorTreeFromExpression(expr, depth) {
-  var depth = depth || 0;
-  if(expr.explicitExpression && depth++ == 1) return {};
-  var trees = expr.value.sequence.map(function(el) {
-    return generateDescriptorTreeFrom(el.result, depth);
-  });
-  return mergeDescriptorTrees(trees);
-}
-
-function generateDescriptorTreeFrom(obj, depth) {
-  var innerTree;
-  if(obj.descriptor === 'string') return obj.str;
-  if(obj.descriptor) depth = 0;
-  switch(el.type) {
-    case 'alternative':
-      innerTree = generateDescriptorTreeFromExpression(el, depth);
-      return;
-    case 'group':
-      if(el.option === 'ignore') return {};
-      return generateDescriptorTreeFrom(el.value);
-    case 'repeated-token':
-      //UNDER CONSTRUCTION
-    default:
-  }
-  if(obj.descriptor) {
-    var ret = {};
-    ret[obj.descriptor] = innerTree;
-    return ret;
-  }
-  else return innerTree;
-}
-
-function mergeDescriptorTrees(trees, output) {
-  var ret = output || {};
-  trees.forEach(function(t) {
-    Object.keys(t).forEach(function(key) {
-      if(ret[key]) throw new Error('double use of descriptor');
-      else ret[key] = t[key];
-    })
-  })
-  return ret;
-}*/
 
 module.exports = { Interpreter: Interpreter, ExpressionParser: ExpressionParser, SequenceParser: SequenceParser, RepeatedTokenParser: RepeatedTokenParser, DescribedTokenParser: DescribedTokenParser, StringLiteralParser: StringLiteralParser };
