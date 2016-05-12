@@ -2,14 +2,16 @@ var syntaxTree = require('../syntaxtree');
 var defClass = require('../classgenerator');
 
 TestItem = defClass(syntaxTree.SyntaxItem,
-function(descriptor, descs) {
+function(descriptor, descs, str) {
   syntaxTree.SyntaxItem.call(this, descriptor);
   this.descs = descs;
+  this.str = str;
 },
 {
   getDescriptors: function(depthCtr) {
     return this.descs || { apple: "apple" };
-  }
+  },
+  getString: function() { return this.str }
 })
 
 module.exports = { name: 'syntaxTree', tests: [

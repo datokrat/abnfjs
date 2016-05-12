@@ -1,3 +1,5 @@
+var st = require('./syntaxtree');
+
 function Interpreter(grammar) {
   var self = this;
   this.grammar = grammar;

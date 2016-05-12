@@ -7,6 +7,7 @@ function SyntaxItem(descriptor) {
 {
   getType: notImplemented,
   getString: notImplemented,
+  getLength: notImplemented,
   getSubordinateDescriptors: notImplemented,
   getDescriptor: function() { return this.descriptor },
   getDescriptors: function(isEntry) {
@@ -28,6 +29,7 @@ function Expression(descriptor, args /* := sequence, explicit */) {
 },
 {
   getType: function() { return 'expression' },
+  getLength: function() { return this.getSequence().map(function(el) { return el.getLength() }).reduce(function(red, el) { return red+el }) },
   getSequence: function() { return this.sequence },
   getNthItem: function(n) { return this.sequence[n] },
   isExplicit: function() { return this.explicit },
@@ -59,6 +61,7 @@ function Group(descriptor, args /* := inner */) {
 {
   getType: function() { return 'group' },
   getInner: function() { return this.inner },
+  getLength: function() { return this.isIgnored() ? 0 : this.inner.getLength() },
   isIgnored: function() { return this.inner == null },
   getSubordinateDescriptors: function() {
     if(!this.isIgnored()) return this.inner.getDescriptors();
@@ -73,6 +76,7 @@ function Repetition(descriptor, args /* := items */) {
 },
 {
   getType: function() { return 'repetition' },
+  getLength: function() { return this.getItems().map(function(el) { return el.getLength() }).reduce(function(red, el) { return red+el }) },
   getItems: function() { return this.items },
   getSubordinateDescriptors: function() {
     return composeDescriptorsToArrays(this.items.map(function(i) { return i.getDescriptors() }));
@@ -90,6 +94,7 @@ function StringOrChar(descriptor, args /* := value */) {
 {
   getType: function() { return 'string-or-char' },
   getValue: function() { return this.value },
+  getLength: function() { return this.getValue().length },
   getSubordinateDescriptors: function() { return {} },
   getString: function() { return this.getValue() }
 });
