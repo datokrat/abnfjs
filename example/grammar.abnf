@@ -1,0 +1,4 @@
+sentence = <|subject|>=subj " " predicate [ " " <|object|>=obj ]
+subject = "Paul"
+predicate = "loves"
+object = "programming"
