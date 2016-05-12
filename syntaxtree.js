@@ -10,6 +10,7 @@ function SyntaxItem(descriptor) {
   getLength: notImplemented,
   getSubordinateDescriptors: notImplemented,
   getDescriptor: function() { return this.descriptor },
+  setDescriptor: function(value) { this.descriptor = value },
   getDescriptors: function(isEntry) {
     if(isEntry == null) isEntry = true;
     if(this.getDescriptor()) {
@@ -114,4 +115,4 @@ function notImplemented() {
   throw new Error('not implemented');
 }
 
-module.exports = { SyntaxItem: SyntaxItem, Expression: Expression, Group: Group, Repetition: Repetition };
+module.exports = { SyntaxItem: SyntaxItem, Expression: Expression, Group: Group, Repetition: Repetition, StringOrChar: StringOrChar };

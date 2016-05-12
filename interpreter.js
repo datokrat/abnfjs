@@ -1,4 +1,5 @@
 var st = require('./syntaxtree');
+var defClass = require('./classgenerator');
 
 function Interpreter(grammar) {
   var self = this;
@@ -35,10 +36,9 @@ function Interpreter(grammar) {
       ++counter;
       p = parser.parseNext(str, p.iterator);
       if(!p) break;
-      if(longest == null || longest.length < p.result.length)
+      if(longest == null || longest.getLength() < p.result.getLength())
         longest = p.result;
     }
-    console.log('counter: ' + counter);
     return longest;
   }
   
@@ -48,7 +48,7 @@ function Interpreter(grammar) {
     while(true) {
       ++counter;
       p = parser.parseNext(str, p.iterator);
-      if(!p || p.result.length == str.length) {
+      if(!p || p.result.getLength() == str.length) {
         return p && p.result;
       }
     }
@@ -62,19 +62,36 @@ function Interpreter(grammar) {
   }
 }
 
+var ParserGetter = defClass(null,
+function ParserGetter() {},
+{
+  get: null
+});
+
+var ParserGetter_Variable = defClass(ParserGetter,
+function ParserGetter_Variable(val) { 
+  this.value = val
+},
+{
+  get: function() { return this.value }
+});
+
+var ParserGetter_Function = defClass(ParserGetter,
+function ParserGetter_Function(func) {
+  this.func = func;
+},
+{
+  get: function() { return this.func() }
+});
+
 function ExpressionParser(grammar, interpreter, explicitExpression) {
   var items = [];
   var id = Math.random();
-  function getItem(i) {
-    if((typeof items[i]) === 'function') return items[i]();
-    else return items[i];
-  }
   
   for(var i = 0; i < grammar.alternatives.length; ++i) {
-    if(grammar.alternatives[i].type == 'identifier') {
-      items[i] = function() { return interpreter.getPattern(this.value) }.bind(grammar.alternatives[i]);
-    }
-    else items[i] = new SequenceParser(grammar.alternatives[i], interpreter);
+    if(grammar.alternatives[i].type == 'identifier')
+      items[i] = new ParserGetter_Function( function() { return interpreter.getPattern(this.value) }.bind(grammar.alternatives[i]) );
+    else items[i] = new ParserGetter_Variable( new SequenceParser(grammar.alternatives[i], interpreter) );
   }
   
   this.parseNext = function(str, lastIterator) {
@@ -87,12 +104,12 @@ function ExpressionParser(grammar, interpreter, explicitExpression) {
     it.expressionId = id;
     while(true) {
       if(it.currentIndex >= items.length) break;
-      var p = getItem(it.currentIndex).parseNext(str, it.innerIterator);
+      var p = items[it.currentIndex].get().parseNext(str, it.innerIterator);
       if(p) {
         it.innerIterator = p.iterator;
         var alternative = grammar.alternatives[it.currentIndex];
         var name = (alternative.length == 1 && alternative[0].type == 'identifier') ?  alternative[0].value : undefined;
-        return { result: { type: 'alternative', explicitExpression: explicitExpression, alternativeIndex: it.currentIndex, name: name, value: p.result, length: p.result.length, str: p.result.str }, iterator: it };
+        return { result: new st.Expression(null, { explicit: explicitExpression, sequence: p.result })/*{ type: 'alternative', explicitExpression: explicitExpression, alternativeIndex: it.currentIndex, name: name, value: p.result, length: p.result.length, str: p.result.str }*/, iterator: it };
       }
       else {
         it.innerIterator = null;
@@ -106,16 +123,12 @@ function ExpressionParser(grammar, interpreter, explicitExpression) {
 function SequenceParser(grammar, interpreter) {
   var items = [];
   var id = Math.random();
-  function getItem(i) {
-    if((typeof items[i]) == 'function') return items[i]();
-    else return items[i];
-  }
   
   for(var i = 0; i < grammar.length; ++i) {
-    if(grammar[i].type == 'identifier') {
-      items[i] = function() { return interpreter.getPattern(this.value) }.bind(grammar[i]);
-    }
-    else items[i] = interpreter.createParser(grammar[i]);
+    if(grammar[i].type == 'identifier')
+      items[i] = new ParserGetter_Function( function() { return interpreter.getPattern(this.value) }.bind(grammar[i]) );
+    else 
+      items[i] = new ParserGetter_Variable( interpreter.createParser(grammar[i]) );
   }
   
   this.parseNext = function(str, lastIterator) {
@@ -128,7 +141,7 @@ function SequenceParser(grammar, interpreter) {
     it.sequenceId = id;
     function stackTop() { return it.stack[it.stack.length-1]; }
     function pushTop(parseResult) {
-      it.stack.push({ length: stackTop().length + parseResult.length, it: null });
+      it.stack.push({ length: stackTop().length + parseResult.getLength(), it: null });
     }
     function tryUndoLast() {
       it.stack.pop();
@@ -139,12 +152,12 @@ function SequenceParser(grammar, interpreter) {
     }
     
     while(it.stack.length > 0) {
-      var p = getItem(it.stack.length-1).parseNext(str.substr(stackTop().length), stackTop().it);
+      var p = items[it.stack.length-1].get().parseNext(str.substr(stackTop().length), stackTop().it);
       if(p) {
         stackTop().result = p.result;
         stackTop().it = p.iterator;
         if(it.stack.length >= items.length) {
-          return { result: { type: 'sequence', str: it.stack.map(function(i) { return i.result.str }).join(''), sequence: it.stack.map(function(i, index) { return { name: itemName(index), result: i.result } }), length: stackTop().length + p.result.length }, iterator: it };
+          return { result: it.stack.map(function(i, index) { return i.result }) /*{ type: 'sequence', str: it.stack.map(function(i) { return i.result.str }).join(''), sequence: it.stack.map(function(i, index) { return { name: itemName(index), result: i.result } }), length: stackTop().length + p.result.length }*/, iterator: it };
         }
         else {
           pushTop(p.result);
@@ -172,12 +185,12 @@ function GroupParser(grammar, interpreter) {
         var res = innerParser.parseNext(str, it.inner);
         if(res) {
           it.inner = res.iterator;
-          return { result: { type: 'group', option: 'select', length: res.result.length, value: res.result, str: res.result.str, descriptor: grammar.descriptor }, iterator: it };
+          return { result: new st.Group(null, { inner: res.result })/*{ type: 'group', option: 'select', length: res.result.length, value: res.result, str: res.result.str, descriptor: grammar.descriptor }*/, iterator: it };
         }
         else {
           it.value = 'ignore';
           it.inner = null;
-          if(grammar.isOptional) return { /* type: 'group', ? */ result: { type: 'group', option: 'ignore', length: 0, str: '' }, iterator: it };
+          if(grammar.isOptional) return { /* type: 'group', ? */ result: new st.Group(null, { inner: null })/*{ type: 'group', option: 'ignore', length: 0, str: '' }*/, iterator: it };
           else return;
         }
       case 'ignore': return;
@@ -200,7 +213,7 @@ function RepeatedTokenParser(grammar, interpreter) {
     while(it.stack == null || it.stack.length > 0) {
       if(it.stack == null) { // is it wise to test the '0' case first?
         it.stack = [{ length: 0, it: null }];
-        if(min == 0) return { result: { type: 'repeated-token', count: 0, items: [], length: 0, str: '' }, iterator: it };
+        if(min == 0) return { result: new st.Repetition(null, { items: [] }) /*{ type: 'repeated-token', count: 0, items: [], length: 0, str: '' }*/, iterator: it };
       }
       else {
         var p;
@@ -210,7 +223,7 @@ function RepeatedTokenParser(grammar, interpreter) {
           it.stack.push({ length: stackTop().length + p.result.length, it: null });
           var items = it.stack.map(function(x) { return x.result });
           items.pop();
-          if(count() >= min) return { result: { type: 'repeated-token', count: count(), items: items, length: stackTop().length, str: items.map(function(i) { return i.str }).join('') }, iterator: it };
+          if(count() >= min) return { result: new st.Repetition(null, { items: items })/*{ type: 'repeated-token', count: count(), items: items, length: stackTop().length, str: items.map(function(i) { return i.str }).join('') }*/, iterator: it };
           else continue;
         }
         else {
@@ -229,7 +242,7 @@ function DescribedTokenParser(grammar, interpreter) {
   this.parseNext = function(str, lastIterator) {
     var parsed = innerParser.parseNext(str, lastIterator);
     if(parsed) {
-      parsed.result.descriptor = grammar.descriptor;
+      parsed.result.setDescriptor(grammar.descriptor);
       return parsed;
     }
     else return;
@@ -242,7 +255,7 @@ function CharCodeParser(grammar) {
   this.parseNext = function(str, iterator) {
     if(iterator) return;
     if(str.charCodeAt(0) >= grammar.from && str.charCodeAt(0) <= grammar.to)
-      return { result: { type: 'charcode', value: str[0], length: 1, str: str[0] }, iterator: true };
+      return { result: new st.StringOrChar(null, { value: str[0] }) /*{ type: 'charcode', value: str[0], length: 1, str: str[0] }*/, iterator: true };
   }
 }
 
@@ -252,15 +265,14 @@ function StringLiteralParser(grammar) {
   this.parse = function(str) { //TODO: deprecated
     var begin = str.substr(0,grammar.value.length);
     if(grammar.caseSensitive) {
-      if(begin == grammar.value) return { type: 'string', pattern: grammar.value, value: begin, length: begin.length, str: begin };
+      if(begin == grammar.value) return new st.StringOrChar(null, { value: begin }); //{ type: 'string', pattern: grammar.value, value: begin, length: begin.length, str: begin };
       else return;
     }
     else {
-      if(begin.toLowerCase() == grammar.value.toLowerCase()) return { type: 'string', pattern: grammar.value, value: begin, length: begin.length, str: begin };
+      if(begin.toLowerCase() == grammar.value.toLowerCase()) return new st.StringOrChar(null, { value: begin }); //{ type: 'string', pattern: grammar.value, value: begin, length: begin.length, str: begin };
       else return;
     }
   }
-  
   
   this.parseNext = function(str, iterator) {
     if(iterator) return;
@@ -269,7 +281,7 @@ function StringLiteralParser(grammar) {
   }
 }
 
-function generateDescriptorTreeFromExpression(expr, depth) {
+/*function generateDescriptorTreeFromExpression(expr, depth) {
   var depth = depth || 0;
   if(expr.explicitExpression && depth++ == 1) return {};
   var trees = expr.value.sequence.map(function(el) {
@@ -310,6 +322,6 @@ function mergeDescriptorTrees(trees, output) {
     })
   })
   return ret;
-}
+}*/
 
 module.exports = { Interpreter: Interpreter, ExpressionParser: ExpressionParser, SequenceParser: SequenceParser, RepeatedTokenParser: RepeatedTokenParser, DescribedTokenParser: DescribedTokenParser, StringLiteralParser: StringLiteralParser };

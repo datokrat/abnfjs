@@ -8,10 +8,10 @@ module.exports = { name: 'interpreter', tests: [
       ] }
     });
     var res = i.getCompleteMatch(i.getPattern('expression'), 'a');
-    tools.assertTrue(function() { return res.type == 'alternative' });
-    tools.assertTrue(function() { return res.explicitExpression == true });
-    tools.assertTrue(function() { return res.value.sequence.length == 1 });
-    tools.assertTrue(function() { return res.value.sequence[0].result.type == 'string' }, JSON.stringify(res.value.sequence[0],null,2));
+    tools.assertTrue(function() { return res.getType() == 'expression' }, 'wrong type ' + res.getType());
+    tools.assertTrue(function() { return res.isExplicit() });
+    tools.assertTrue(function() { return res.getSequence().length == 1 });
+    tools.assertTrue(function() { return res.getNthItem(0).getType() == 'string-or-char' }, JSON.stringify(res.getNthItem(0),null,2));
   } },
   { name: 'descriptors', run: function (tools) {
     var i = new abnfInterpreter.Interpreter({
@@ -20,6 +20,6 @@ module.exports = { name: 'interpreter', tests: [
       ] }
     });
     var res = i.getCompleteMatch(i.getPattern('expression'), 'a');
-    tools.assertTrue(function() { return res.value.sequence[0].result.descriptor == 'descriptor' }, JSON.stringify(res.value.sequence[0],null,2));
+    tools.assertTrue(function() { return res.getNthItem(0).getDescriptor() == 'descriptor' }, JSON.stringify(res.getNthItem(0),null,2));
   } },
 ]}
