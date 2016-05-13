@@ -1,8 +1,7 @@
-var abnfPath = '..';
+var abnfPath = '..'; //The folder containing this library
 var abnfTokenizer = require(abnfPath + '/tokenizer');
 var abnfParser = require(abnfPath + '/parser');
 var abnfInterpreter = require(abnfPath + '/interpreter');
-var syntaxTreeNavigator = require(abnfPath + '/ast-navigator');
 var fs = require('fs');
 
 var abnf = fs.readFileSync('./grammar.abnf', 'utf8');
@@ -12,5 +11,4 @@ var interpreter = new abnfInterpreter.Interpreter(grammar);
 
 var sentencePattern = interpreter.getPattern('sentence');
 var result = interpreter.getCompleteMatch(sentencePattern, 'Paul loves programming');
-var navi = syntaxTreeNavigator(result);
-console.log(navi.descriptors().subj.str() + ' loves ' + navi.descriptors().obj.str());
+console.log(JSON.stringify(result.evaluate(), null, 2));

@@ -4,10 +4,23 @@ A JavaScript based parser of ABNF code and an interpreter that parses code based
 I'm sorry that this documentation is not very sophisticated, yet. If you have any questions please don't hesitate to send me a message!
 
 # example
+To execute the following example, navigate to the folder examples/ and execute main.js:
+    $ cd examples
+    $ node main.js
+
+output:
+    {
+      "subject": "Paul",
+      "predicate": "loves",
+      "object": "programming"
+    }
+
 ### grammar.abnf
     ; The syntax is slightly modified.
-    ; <|pattern|>=desc means that you can access *pattern* using the descriptor *desc*
-    sentence = <|subject|>=subj " " predicate [ " " <|object|>=obj ]
+    ; pattern:desc means that you can access *pattern* using the descriptor *desc*
+    ; = { return *bla* } means that calling result.evaluate() will execute this function and return the return value
+    sentence = subject:subj " " predicate:pred [ " " object:obj ]
+      = { var desc = this.getDescriptors(); return { subject: desc.subj.getString(), predicate: desc.pred.getString(), object: desc.obj.getString() } }
     subject = "Paul"
     predicate = "loves"
     object = "programming"
@@ -17,7 +30,6 @@ I'm sorry that this documentation is not very sophisticated, yet. If you have an
     var abnfTokenizer = require(abnfPath + '/tokenizer');
     var abnfParser = require(abnfPath + '/parser');
     var abnfInterpreter = require(abnfPath + '/interpreter');
-    var syntaxTreeNavigator = require(abnfPath + '/ast-navigator');
     var fs = require('fs');
     
     var abnf = fs.readFileSync('./grammar.abnf', 'utf8');
@@ -27,5 +39,4 @@ I'm sorry that this documentation is not very sophisticated, yet. If you have an
     
     var sentencePattern = interpreter.getPattern('sentence');
     var result = interpreter.getCompleteMatch(sentencePattern, 'Paul loves programming');
-    var navi = syntaxTreeNavigator(result);
-    console.log(navi.descriptors().subj.str() + ' loves ' + navi.descriptors().obj.str());
+    console.log(JSON.stringify(result.evaluate(), null, 2));

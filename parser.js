@@ -42,7 +42,7 @@ ns.parseStatement = function parseStatement(tokens, cursor) {
       expression.evaluate = tokens[cursorAfterExpression+1].value;
       expression.length += 2;
     }
-    else throw new Error('function-body expected');
+    else throw new Error('function-body expected, got ' + tokens[cursorAfterExpression+1].type);
   }
   
   return { type: 'statement', identifier: identifier, expression: expression,  length: newlines + expression.length + 2 };
