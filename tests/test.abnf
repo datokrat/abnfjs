@@ -1,0 +1,4 @@
+colontest = 'name':name
+  = { return this.getString() } 
+test = ([a *"b"] [*"b"])
+a = "a"

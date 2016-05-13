@@ -1,4 +1,4 @@
-var testPackages = [require('./tokenizer'), require('./parser'), require('./syntaxtree'), require('./interpreter')];
+var testPackages = [require('./tokenizer'), require('./parser'), require('./syntaxtree'), require('./interpreter'), require('./all')];
 
 
 var tools = getTools();

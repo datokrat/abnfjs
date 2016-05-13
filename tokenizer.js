@@ -22,11 +22,26 @@ ns.parseNextToken = function parseNextToken(str) {
   if(str[0] == ';') return parseComment(str);
   if(str[0] == '"' || str[0] == "'") return parseString(str);
   if(str[0] == '%') return parseCharCode(str);
+  if(str[0] == '{') return parseFunctionBody(str);
   return parseOperator(str) || parseIdentifier(str);
 }
 
 ns.assignIdsToTokens = function assignIdsToTokens(tokens) {
   for(var i=0; i<tokens.length; ++i) tokens[i].id = i;
+}
+
+function parseFunctionBody(str) {
+  var newLineIndex = str.indexOf('\n');
+  if(newLineIndex >= 0) str = str.substr(0, newLineIndex);
+  var str = str.trim();
+  if(str[str.length-1] != '}') throw new Error('invalid function-body ' + str.substr(0,100));
+  try {
+    var f = new Function(str.substr(1, str.length-2));
+    return { type: 'function-body', length: str.length, value: f };
+  }
+  catch(e) {
+    throw new Error('invalid function-body');
+  }
 }
 
 function parseNewline(str) {

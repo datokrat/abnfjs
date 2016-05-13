@@ -109,7 +109,7 @@ function ExpressionParser(grammar, interpreter, explicitExpression) {
         it.innerIterator = p.iterator;
         var alternative = grammar.alternatives[it.currentIndex];
         var name = (alternative.length == 1 && alternative[0].type == 'identifier') ?  alternative[0].value : undefined;
-        return { result: new st.Expression(null, { explicit: explicitExpression, sequence: p.result }), iterator: it };
+        return { result: new st.Expression(getFirstSyntaxItemArgument(grammar), { explicit: explicitExpression, sequence: p.result }), iterator: it };
       }
       else {
         it.innerIterator = null;
@@ -185,12 +185,12 @@ function GroupParser(grammar, interpreter) {
         var res = innerParser.parseNext(str, it.inner);
         if(res) {
           it.inner = res.iterator;
-          return { result: new st.Group(null, { inner: res.result }), iterator: it };
+          return { result: new st.Group(getFirstSyntaxItemArgument(grammar), { inner: res.result }), iterator: it };
         }
         else {
           it.value = 'ignore';
           it.inner = null;
-          if(grammar.isOptional) return { result: new st.Group(null, { inner: null }), iterator: it };
+          if(grammar.isOptional) return { result: new st.Group(getFirstSyntaxItemArgument(grammar), { inner: null }), iterator: it };
           else return;
         }
       case 'ignore': return;
@@ -213,7 +213,7 @@ function RepeatedTokenParser(grammar, interpreter) {
     while(it.stack == null || it.stack.length > 0) {
       if(it.stack == null) { // is it wise to test the '0' case first?
         it.stack = [{ length: 0, it: null }];
-        if(min == 0) return { result: new st.Repetition(null, { items: [] }), iterator: it };
+        if(min == 0) return { result: new st.Repetition(getFirstSyntaxItemArgument(grammar), { items: [] }), iterator: it };
       }
       else {
         var p;
@@ -223,7 +223,7 @@ function RepeatedTokenParser(grammar, interpreter) {
           it.stack.push({ length: stackTop().length + p.result.length, it: null });
           var items = it.stack.map(function(x) { return x.result });
           items.pop();
-          if(count() >= min) return { result: new st.Repetition(null, { items: items }), iterator: it };
+          if(count() >= min) return { result: new st.Repetition(getFirstSyntaxItemArgument(grammar), { items: items }), iterator: it };
           else continue;
         }
         else {
@@ -255,7 +255,7 @@ function CharCodeParser(grammar) {
   this.parseNext = function(str, iterator) {
     if(iterator) return;
     if(str.charCodeAt(0) >= grammar.from && str.charCodeAt(0) <= grammar.to)
-      return { result: new st.StringOrChar(null, { value: str[0] }), iterator: true };
+      return { result: new st.StringOrChar(getFirstSyntaxItemArgument(grammar), { value: str[0] }), iterator: true };
   }
 }
 
@@ -265,11 +265,11 @@ function StringLiteralParser(grammar) {
   this.parse = function(str) { //TODO: deprecated
     var begin = str.substr(0,grammar.value.length);
     if(grammar.caseSensitive) {
-      if(begin == grammar.value) return new st.StringOrChar(null, { value: begin });
+      if(begin == grammar.value) return new st.StringOrChar(getFirstSyntaxItemArgument(grammar), { value: begin });
       else return;
     }
     else {
-      if(begin.toLowerCase() == grammar.value.toLowerCase()) return new st.StringOrChar(null, { value: begin });
+      if(begin.toLowerCase() == grammar.value.toLowerCase()) return new st.StringOrChar(getFirstSyntaxItemArgument(grammar), { value: begin });
       else return;
     }
   }
@@ -279,6 +279,11 @@ function StringLiteralParser(grammar) {
     var res = this.parse(str);
     if(res) return { result: res, iterator: true };
   }
+}
+
+
+function getFirstSyntaxItemArgument(grammar) {
+  return { descriptor: null, evaluateFn: grammar.evaluate };
 }
 
 module.exports = { Interpreter: Interpreter, ExpressionParser: ExpressionParser, SequenceParser: SequenceParser, RepeatedTokenParser: RepeatedTokenParser, DescribedTokenParser: DescribedTokenParser, StringLiteralParser: StringLiteralParser };

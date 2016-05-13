@@ -11,6 +11,16 @@ module.exports = { name: 'tokenizer', tests: [
     assertToken(tools, tok[4], 'identifier', tok[4].type == 'identifier');
     assertToken(tools, tok[5], 'eof', tok[5].type == 'eof');
   } },
+  { name: 'evaluator-function', run: function (tools) {
+    var str = "expression = 'A' = { return this.getString() }";
+    var tok = abnfTokenizer.tokenize(str);
+    assertToken(tools, tok[4], 'function-body', tok[4].type == 'function-body');
+  } },
+  { name: 'evaluator-function-2', run: function (tools) {
+    var str = "expression = 'A' = { return this.getString() } \na = 'Hi' \nb = 'Ho'";
+    var tok = abnfTokenizer.tokenize(str);
+    assertToken(tools, tok[4], 'function-body', tok[4].type == 'function-body');
+  } },
 ]}
 
 function assertToken(tools, tok, caption, predicate) {

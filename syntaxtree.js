@@ -1,8 +1,10 @@
 var defClass = require('./classgenerator');
 
 SyntaxItem = defClass(null,
-function SyntaxItem(descriptor) {
-  this.descriptor = descriptor;
+function SyntaxItem(args) {
+  if(!args) return;
+  this.descriptor = args.descriptor;
+  this.evaluateFn = args.evaluateFn;
 },
 {
   getType: notImplemented,
@@ -19,19 +21,23 @@ function SyntaxItem(descriptor) {
       return ret;
     }
     else return this.getSubordinateDescriptors(isEntry);
+  },
+  evaluate: function() {
+    return this.evaluateFn.call(this);
   }
 });
 
 Expression = defClass(SyntaxItem,
-function Expression(descriptor, args /* := sequence, explicit */) {
-  SyntaxItem.call(this, descriptor);
+function Expression(baseArg, args /* := sequence, explicit */) {
+  SyntaxItem.call(this, baseArg);
   this.sequence = args.sequence;
   this.explicit = args.explicit == true;
 },
 {
   getType: function() { return 'expression' },
-  getLength: function() { return this.getSequence().map(function(el) { return el.getLength() }).reduce(function(red, el) { return red+el }) },
+  getLength: function() { return this.getSequence().map(function(el) { return el.getLength() }).reduce(function(red, el) { return red+el },0) },
   getSequence: function() { return this.sequence },
+  getString: function() { return this.getSequence().map(function(el) { return el.getString() }).join('') },
   getNthItem: function(n) { return this.sequence[n] },
   isExplicit: function() { return this.explicit },
   getSubordinateDescriptors: function(isEntry) {
@@ -55,14 +61,15 @@ function mergeDescriptorTrees(trees) {
 }
 
 Group = defClass(SyntaxItem,
-function Group(descriptor, args /* := inner */) {
-  SyntaxItem.call(this, descriptor);
+function Group(baseArg, args /* := inner */) {
+  SyntaxItem.call(this, baseArg);
   this.inner = args.inner;
 },
 {
   getType: function() { return 'group' },
   getInner: function() { return this.inner },
   getLength: function() { return this.isIgnored() ? 0 : this.inner.getLength() },
+  getString: function() { this.inner.getString() },
   isIgnored: function() { return this.inner == null },
   getSubordinateDescriptors: function() {
     if(!this.isIgnored()) return this.inner.getDescriptors();
@@ -71,13 +78,13 @@ function Group(descriptor, args /* := inner */) {
 });
 
 Repetition = defClass(SyntaxItem,
-function Repetition(descriptor, args /* := items */) {
-  SyntaxItem.call(this, descriptor);
+function Repetition(baseArg, args /* := items */) {
+  SyntaxItem.call(this, baseArg);
   this.items = args.items;
 },
 {
   getType: function() { return 'repetition' },
-  getLength: function() { return this.getItems().map(function(el) { return el.getLength() }).reduce(function(red, el) { return red+el }) },
+  getLength: function() { return this.getItems().map(function(el) { return el.getLength() }).reduce(function(red, el) { return red+el },0) },
   getItems: function() { return this.items },
   getSubordinateDescriptors: function() {
     return composeDescriptorsToArrays(this.items.map(function(i) { return i.getDescriptors() }));
@@ -88,8 +95,8 @@ function Repetition(descriptor, args /* := items */) {
 });
 
 StringOrChar = defClass(SyntaxItem,
-function StringOrChar(descriptor, args /* := value */) {
-  SyntaxItem.call(this, descriptor);
+function StringOrChar(baseArg, args /* := value */) {
+  SyntaxItem.call(this, baseArg);
   this.value = args.value;
 },
 {

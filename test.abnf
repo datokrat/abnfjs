@@ -1,3 +1,0 @@
-colontest = ():name = return name
-test = ([a *"b"] [*"b"])
-a = "a"

@@ -35,14 +35,23 @@ ns.parseStatement = function parseStatement(tokens, cursor) {
   var identifier = tokens[cursor].value;
   var expression = ns.parseExpression(tokens, cursor+2, tokens.length);
   
-  return { type: 'statement', identifier: identifier, expression: expression, length: newlines + expression.length + 2 };
+  var cursorAfterExpression = cursor+2+expression.length;
+  var tokenAfterExpression = tokens[cursorAfterExpression];
+  if(tokenAfterExpression.type == 'operator' && tokenAfterExpression.value == '=') {
+    if(tokens[cursorAfterExpression+1].type == 'function-body') {
+      expression.evaluate = tokens[cursorAfterExpression+1].value;
+      expression.length += 2;
+    }
+    else throw new Error('function-body expected');
+  }
+  
+  return { type: 'statement', identifier: identifier, expression: expression,  length: newlines + expression.length + 2 };
 }
 
 ns.parseExpression = function parseExpression(tokens, cursor, maxEnd, args /* inGroup: bool */) {
   var start = cursor;
   var end = cursor;
-  while(end < maxEnd && tokens[end].type != 'newline' && tokens[end].type != 'eof') ++end;
-  
+  while(end < maxEnd && tokens[end].type != 'newline' && tokens[end].type != 'eof' && (tokens[end].type != 'operator' || tokens[end].value != '=')) ++end;
   var groupedTokens = [];
   for(cursor = start; cursor < end;) {
     //TODO: Error whenever opening brackets differ from closing brackets
@@ -110,7 +119,7 @@ ns.parseGroup = function parseGroup(tokens, begin, maxEnd) {
 }
 
 ns.parseAlternatives = function parseAlternatives(tokens) {
-  if(tokens.length == 0) throw new Error('unexpected end of sequence');
+  if(tokens.length == 0) throw new Error('unexpected end of sequence ' + JSON.stringify(tokens, null, 2));
   var sequences = [[]];
   for(var i=0; i<tokens.length; ++i) {
     if(tokens[i].type == 'operator' && tokens[i].value == '/') {

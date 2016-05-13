@@ -2,8 +2,8 @@ var syntaxTree = require('../syntaxtree');
 var defClass = require('../classgenerator');
 
 TestItem = defClass(syntaxTree.SyntaxItem,
-function(descriptor, descs, str) {
-  syntaxTree.SyntaxItem.call(this, descriptor);
+function(baseArg, descs, str) {
+  syntaxTree.SyntaxItem.call(this, baseArg);
   this.descs = descs;
   this.str = str;
 },
@@ -26,15 +26,15 @@ module.exports = { name: 'syntaxTree', tests: [
     tools.assertTrue(Object.keys(expr.getSubordinateDescriptors()).length == 0, Object.keys(expr.getSubordinateDescriptors()));
   } },
   { name: 'expression-descriptors-1', run: function(tools) {
-    var expr1 = new syntaxTree.Expression('expr1', { sequence: [], explicit: false });
-    var expr2 = new syntaxTree.Expression('expr2', { sequence: [ expr1 ], explicit: false });
+    var expr1 = new syntaxTree.Expression({ descriptor: 'expr1' }, { sequence: [], explicit: false });
+    var expr2 = new syntaxTree.Expression({ descriptor: 'expr2' }, { sequence: [ expr1 ], explicit: false });
     var expr3 = new syntaxTree.Expression(null, { sequence: [ expr2 ], explicit: false });
     tools.assertTrue(expr2.getSubordinateDescriptors().expr1 != null, JSON.stringify(expr2.getSubordinateDescriptors()));
     tools.assertTrue(expr3.getSubordinateDescriptors().expr2 != null, JSON.stringify(expr3.getSubordinateDescriptors()));
     tools.assertTrue(expr3.getSubordinateDescriptors().expr1 == null, JSON.stringify(expr3.getSubordinateDescriptors()));
   } },
   { name: 'expression-descriptors-2', run: function(tools) {
-    var expr1 = new syntaxTree.Expression('expr1', { sequence: [], explicit: false });
+    var expr1 = new syntaxTree.Expression({ descriptor: 'expr1' }, { sequence: [], explicit: false });
     var expr2 = new syntaxTree.Expression(null, { sequence: [ expr1 ], explicit: true });
     var expr3 = new syntaxTree.Expression(null, { sequence: [ expr2 ], explicit: false });
     tools.assertTrue(expr2.getSubordinateDescriptors().expr1 != null, '1' + JSON.stringify(expr2.getSubordinateDescriptors()));
@@ -62,5 +62,22 @@ module.exports = { name: 'syntaxTree', tests: [
     var rep = new syntaxTree.Repetition(null, { items: [item, item2] });
     tools.assertTrue(rep.getSubordinateDescriptors().a.length == 2, 'a should have length 2');
     tools.assertTrue(rep.getSubordinateDescriptors().b[1] == 4, 'b[1] should be 4');
+  } },
+  { name: 'evaluate-1', run: function(tools) {
+    var fn = function() { return 'ok' };
+    var item = new SyntaxItem({ evaluateFn: fn });
+    tools.assertTrue(function() { return item.evaluate() == 'ok' })
+  } },
+  { name: 'evaluate-2', run: function(tools) {
+    var fn = function() { return this.getString() };
+    var item = new TestItem({ evaluateFn: fn }, null, 'ok');
+    tools.assertTrue(function() { return item.evaluate() == 'ok' })
+  } },
+  { name: 'evaluate-3', run: function(tools) {
+    var itemFn = function() { return this.getString() };
+    var exprFn = function() { return this.getDescriptors().item.evaluate() };
+    var item = new TestItem({ descriptor: 'item', evaluateFn: itemFn }, null, 'ok');
+    var expr = new syntaxTree.Expression({ evaluateFn: exprFn }, { sequence: [ item ] });
+    tools.assertTrue(function() { return item.evaluate() == 'ok' })
   } },
 ]}
