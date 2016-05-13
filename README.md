@@ -5,10 +5,12 @@ I'm sorry that this documentation is not very sophisticated, yet. If you have an
 
 # example
 To execute the following example, navigate to the folder examples/ and execute main.js:
+
     $ cd examples
     $ node main.js
 
 output:
+
     {
       "subject": "Paul",
       "predicate": "loves",
