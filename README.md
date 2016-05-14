@@ -22,7 +22,7 @@ output:
     ; pattern:desc means that you can access *pattern* using the descriptor *desc*
     ; = { return *bla* } means that calling result.evaluate() will execute this function and return the return value
     sentence = subject:subj " " predicate:pred [ " " object:obj ]
-      = { var desc = this.getDescriptors(); return { subject: desc.subj.getString(), predicate: desc.pred.getString(), object: desc.obj.getString() } }
+      = { var desc = this.getSubordinateDescriptors(); return { subject: desc.subj.getString(), predicate: desc.pred.getString(), object: desc.obj.getString() } }
     subject = "Paul"
     predicate = "loves"
     object = "programming"
