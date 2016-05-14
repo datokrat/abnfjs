@@ -52,4 +52,16 @@ module.exports = { name: 'interpreter', tests: [
     var res = i.getCompleteMatch(i.getPattern('expression'), 'a');
     tools.assertTrue(function() { return res.evaluate() == 'ok' });
   } },
+  { name: 'recursion', run: function (tools) {
+    var i = new abnfInterpreter.Interpreter({
+      a: { type: 'expression', alternatives: [
+        [ { type: 'group', expression: { type: 'identifier', value: 'b' } } ],
+        [ { type: 'string', value: '!' } ]
+      ]},
+      b: { type: 'expression', alternatives: [
+        [ { type: 'string', value: '/' }, { type: 'group', expression: { type: 'identifier', value: 'a' } } ],
+      ]},
+    });
+    i.getPattern('a')
+  } },
 ]}

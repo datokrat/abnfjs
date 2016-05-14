@@ -49,9 +49,11 @@ function Interpreter(grammar) {
       ++counter;
       p = parser.parseNext(str, p.iterator);
       if(!p || p.result.getLength() == str.length) {
-        return p && p.result;
+        if(p) return p.result;
+        else throw new Error('no match');
       }
     }
+    throw new Error('no match');
   }
   
   this.createParser = function(grammar, explicitExpression) {
@@ -59,6 +61,13 @@ function Interpreter(grammar) {
     if(parserType) return new parserType(grammar, this, explicitExpression);
     else if(grammar.type === 'identifier') return this.getPattern(grammar.value);
     else throw new Error('unsupported grammar type: ' + grammar.type);
+  }
+  
+
+  this.createParserGetter = function(grammar, explicitExpression) {
+    var self = this;
+    if(grammar.type == 'identifier') return new ParserGetter_Function( function() { return self.getPattern(this.value) }.bind(grammar) );
+    else return new ParserGetter_Variable( self.createParser(grammar, explicitExpression) )
   }
 }
 
@@ -89,7 +98,7 @@ function ExpressionParser(grammar, interpreter, explicitExpression) {
   var id = Math.random();
   
   for(var i = 0; i < grammar.alternatives.length; ++i) {
-    if(grammar.alternatives[i].type == 'identifier')
+    if(grammar.alternatives[i].type == 'identifier') //TODO: This is senseless because sequences can't be identifiers???
       items[i] = new ParserGetter_Function( function() { return interpreter.getPattern(this.value) }.bind(grammar.alternatives[i]) );
     else items[i] = new ParserGetter_Variable( new SequenceParser(grammar.alternatives[i], interpreter) );
   }
@@ -125,10 +134,11 @@ function SequenceParser(grammar, interpreter) {
   var id = Math.random();
   
   for(var i = 0; i < grammar.length; ++i) {
-    if(grammar[i].type == 'identifier')
+    items[i] = interpreter.createParserGetter(grammar[i]);
+    /*if(grammar[i].type == 'identifier')
       items[i] = new ParserGetter_Function( function() { return interpreter.getPattern(this.value) }.bind(grammar[i]) );
     else 
-      items[i] = new ParserGetter_Variable( interpreter.createParser(grammar[i]) );
+      items[i] = new ParserGetter_Variable( interpreter.createParser(grammar[i]) );*/
   }
   
   this.parseNext = function(str, lastIterator) {
@@ -174,7 +184,7 @@ function SequenceParser(grammar, interpreter) {
 }
 
 function GroupParser(grammar, interpreter) {
-  var innerParser = interpreter.createParser(grammar.expression);
+  var innerParserGetter = interpreter.createParserGetter(grammar.expression);
   
   this.parseNext = function(str, lastIterator) {
     var it = lastIterator ? { value: lastIterator.value, inner: lastIterator.inner } : { value: 'none', inner: null };
@@ -182,7 +192,7 @@ function GroupParser(grammar, interpreter) {
       case 'none':
       case 'select':
         it.value = 'select';
-        var res = innerParser.parseNext(str, it.inner);
+        var res = innerParserGetter.get().parseNext(str, it.inner);
         if(res) {
           it.inner = res.iterator;
           return { result: new st.Group(getFirstSyntaxItemArgument(grammar), { inner: res.result }), iterator: it };
@@ -199,7 +209,7 @@ function GroupParser(grammar, interpreter) {
 }
 
 function RepeatedTokenParser(grammar, interpreter) {
-  var innerParser = interpreter.createParser(grammar.item);
+  var innerParserGetter = interpreter.createParserGetter(grammar.item);
   
   this.parseNext = function(str, lastIterator) {
     var it = lastIterator ? { stack: lastIterator.stack.concat([]) } : { stack: null };
@@ -217,7 +227,7 @@ function RepeatedTokenParser(grammar, interpreter) {
       }
       else {
         var p;
-        if((count() < max) && (p = innerParser.parseNext(str.substr(stackTop().length), stackTop().it))) {
+        if((count() < max) && (p = innerParserGetter.get().parseNext(str.substr(stackTop().length), stackTop().it))) {
           stackTop().it = p.iterator;
           stackTop().result = p.result;
           it.stack.push({ length: stackTop().length + p.result.getLength(), it: null });
@@ -237,10 +247,10 @@ function RepeatedTokenParser(grammar, interpreter) {
 }
 
 function DescribedTokenParser(grammar, interpreter) {
-  var innerParser = interpreter.createParser(grammar.inner);
+  var innerParserGetter = interpreter.createParserGetter(grammar.inner);
   
   this.parseNext = function(str, lastIterator) {
-    var parsed = innerParser.parseNext(str, lastIterator);
+    var parsed = innerParserGetter.get().parseNext(str, lastIterator);
     if(parsed) {
       parsed.result.setDescriptor(grammar.descriptor);
       return parsed;

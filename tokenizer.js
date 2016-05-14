@@ -38,7 +38,7 @@ function parseFunctionBody(str) {
   do {
     endIndex = str.indexOf('}', endIndex+1);
     if(endIndex >= 0) body = str.substr(0, endIndex+1);
-    else throw new Error('no closing } found');
+    else throw new Error('no closing } found or invalid function-body');
     ret = tryBuildFunctionFromBody(body);
     if(ret) return { type: 'function-body', length: body.length, value: ret };
   } while (endIndex >= 0);
