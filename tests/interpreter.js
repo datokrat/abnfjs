@@ -13,6 +13,20 @@ module.exports = { name: 'interpreter', tests: [
     tools.assertTrue(function() { return res.getSequence().length == 1 });
     tools.assertTrue(function() { return res.getNthItem(0).getType() == 'string-or-char' }, JSON.stringify(res.getNthItem(0),null,2));
   } },
+  { name: 'repetitions', run: function (tools) {
+    var i = new abnfInterpreter.Interpreter({
+      expression: { type: 'expression', alternatives: [
+        [ { type: 'repeated-token', minimum: 0, maximum: Infinity, item: {
+          type: 'expression', alternatives: [
+            [ { type: 'string', value: 'a' } ],
+            [ { type: 'string', value: 'b' } ]
+          ]
+        } } ]
+      ]}
+    });
+    var res = i.getCompleteMatch(i.getPattern('expression'), 'ab');
+    tools.assertTrue(function() { return res.getString() == 'ab' }, res.getString());
+  } },
   { name: 'descriptors', run: function (tools) {
     var i = new abnfInterpreter.Interpreter({
       expression: { type: 'expression', alternatives: [

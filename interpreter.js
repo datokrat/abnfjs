@@ -220,7 +220,7 @@ function RepeatedTokenParser(grammar, interpreter) {
         if((count() < max) && (p = innerParser.parseNext(str.substr(stackTop().length), stackTop().it))) {
           stackTop().it = p.iterator;
           stackTop().result = p.result;
-          it.stack.push({ length: stackTop().length + p.result.length, it: null });
+          it.stack.push({ length: stackTop().length + p.result.getLength(), it: null });
           var items = it.stack.map(function(x) { return x.result });
           items.pop();
           if(count() >= min) return { result: new st.Repetition(getFirstSyntaxItemArgument(grammar), { items: items }), iterator: it };

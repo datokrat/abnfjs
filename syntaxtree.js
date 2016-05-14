@@ -23,6 +23,7 @@ function SyntaxItem(args) {
     else return this.getSubordinateDescriptors(isEntry);
   },
   evaluate: function() {
+    if(typeof this.evaluateFn !== 'function') throw new Error('no or invalid evaluate function specified');
     return this.evaluateFn.call(this);
   }
 });
