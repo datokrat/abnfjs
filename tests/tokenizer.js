@@ -21,10 +21,16 @@ module.exports = { name: 'tokenizer', tests: [
     var tok = abnfTokenizer.tokenize(str);
     assertToken(tools, tok[4], 'function-body', tok[4].type == 'function-body');
   } },
-  { name: 'evaluator-function-3', run: function (tools) {
+  { name: 'evaluator-function-linebreak', run: function (tools) {
     var str = "expression = 'A' = { return this.getString() } \n = { \nreturn 'change';\n}";
     var tok = abnfTokenizer.tokenize(str);
     assertToken(tools, tok[4], 'function-body', tok[4].type == 'function-body');
+  } },
+  { name: 'evaluator-function-4', run: function (tools) {
+    var str = "expression = 'A' = { return this.getString() } = { return 'change' } ; this is a comment!";
+    var tok = abnfTokenizer.tokenize(str);
+    assertToken(tools, tok[4], 'function-body', tok[4].type == 'function-body');
+    assertToken(tools, tok[5], 'comment', tok[4].type == 'comment');
   } },
 ]}
 

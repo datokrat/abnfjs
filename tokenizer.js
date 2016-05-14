@@ -31,22 +31,21 @@ ns.assignIdsToTokens = function assignIdsToTokens(tokens) {
 }
 
 function parseFunctionBody(str) {
-  var newLineIndex = -1;
+  var endIndex = -1;
   var body;
   var ret;
   
   do {
-    newLineIndex = str.indexOf('\n', newLineIndex+1);
-    if(newLineIndex >= 0) body = str.substr(0, newLineIndex);
-    else body = str;
+    endIndex = str.indexOf('}', endIndex+1);
+    if(endIndex >= 0) body = str.substr(0, endIndex+1);
+    else throw new Error('no closing } found');
     ret = tryBuildFunctionFromBody(body);
     if(ret) return { type: 'function-body', length: body.length, value: ret };
-  } while (newLineIndex >= 0);
+  } while (endIndex >= 0);
   throw new Error('invalid function-body');
 }
 
 function tryBuildFunctionFromBody(str) {
-  str = str.trim();
   if(str[0] == '{' && str[str.length-1] == '}') {
     try {
       return new Function(str.substr(1, str.length-2));
