@@ -1,4 +1,6 @@
 # abnfjs
+
+[![Join the chat at https://gitter.im/datokrat/abnfjs](https://badges.gitter.im/datokrat/abnfjs.svg)](https://gitter.im/datokrat/abnfjs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 A JavaScript based parser of ABNF code and an interpreter that parses code based on the parsed ABNF specification - a "parser generator" or "parser parser". No Node Package Manager dependencies required.
 
 I'm sorry that this documentation is not very sophisticated, yet. If you have any questions please don't hesitate to send me a message!
