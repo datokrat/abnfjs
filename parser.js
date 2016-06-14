@@ -2,7 +2,7 @@ var ns = {};
 
 ns.parse = function parse(tokens) {
   tokens = ns.removeCommentsAndIndentedNewlines(tokens);
-  
+
   var statements = [];
   var statement;
   var cursor = 0;
@@ -11,13 +11,13 @@ ns.parse = function parse(tokens) {
     statements.push(statement);
     cursor += statement.length;
   }
-  
+
   var grammar = {};
   statements.forEach(function(stmt) {
       if(stmt.type == 'statement')
         grammar[stmt.identifier] = stmt.expression;
   });
-  
+
   return grammar;
 }
 
@@ -25,16 +25,16 @@ ns.parseStatement = function parseStatement(tokens, cursor) {
   var newlines = 0;
   while(tokens[cursor+newlines].type == 'newline') ++newlines;
   cursor += newlines;
-  
+
   if(tokens[cursor].type == 'eof') return { type: 'eof', length: 1 + newlines };
-  
+
   if(tokens[cursor].type != 'identifier') throw new Error('identifier expected: ' + tokens[cursor].id);
   if(tokens[cursor+1].type == 'eof' || tokens[cursor+1].type != 'operator' || tokens[cursor+1].value != '=') throw new Error('\'=\' expected after ' + tokens[cursor].id);
   if(tokens[cursor+2].type == 'eof') throw new Error('expression expected after ' + tokens[cursor+1].id);
-  
+
   var identifier = tokens[cursor].value;
   var expression = ns.parseExpression(tokens, cursor+2, tokens.length);
-  
+
   var cursorAfterExpression = cursor+2+expression.length;
   var tokenAfterExpression = tokens[cursorAfterExpression];
   if(tokenAfterExpression.type == 'operator' && tokenAfterExpression.value == '=') {
@@ -44,7 +44,7 @@ ns.parseStatement = function parseStatement(tokens, cursor) {
     }
     else throw new Error('function-body expected, got ' + tokens[cursorAfterExpression+1].type);
   }
-  
+
   return { type: 'statement', identifier: identifier, expression: expression,  length: newlines + expression.length + 2 };
 }
 
@@ -69,7 +69,7 @@ ns.parseExpression = function parseExpression(tokens, cursor, maxEnd, args /* in
       ++cursor;
     }
   }
-  
+
   var repeatedTokens = [];
   var repeatToken = null;
   for(var i = 0; i < groupedTokens.length; ++i) {
@@ -85,7 +85,7 @@ ns.parseExpression = function parseExpression(tokens, cursor, maxEnd, args /* in
       else repeatedTokens.push(groupedTokens[i]);
     }
   }
-  
+
   var describedTokens = [];
   var next;
   var last;
@@ -93,28 +93,28 @@ ns.parseExpression = function parseExpression(tokens, cursor, maxEnd, args /* in
     if(repeatedTokens[i].type == 'descriptor-operator') {
       next = repeatedTokens[i+1];
       last = describedTokens.pop();
-      
+
       if(i == 0) throw new Error('unexpected descriptor-operator at ' + repeatedTokens[i].id);
       if(!next || next.type != 'identifier') throw new Error('identifier expected at ' + (next && next.id));
-      
+
       describedTokens.push({ type: 'described-token', inner: last, descriptor: next.value });
       ++i;
     }
     else describedTokens.push(repeatedTokens[i]);
   }
-  
+
   var alternatives = ns.parseAlternatives(describedTokens);
-  
+
   if(cursor >= end && args && args.inGroup) throw new Error('unexpected end of line at ' + end);
   return { type: 'expression', length: cursor - start, alternatives: alternatives };
 }
 
 ns.parseGroup = function parseGroup(tokens, begin, maxEnd) {
   if(!(tokens[begin].type == 'operator' && (tokens[begin].value == '(' || tokens[begin].value == '['))) return;
-  
+
   var isOptional = tokens[begin].value == '[';
   var expression = ns.parseExpression(tokens, begin + 1, maxEnd, { inGroup: true, isOptional: isOptional });
-  
+
   return { type: 'group', expression: expression, isOptional: isOptional, length: expression.length + 2 };
 }
 
@@ -135,7 +135,7 @@ ns.parseAlternatives = function parseAlternatives(tokens) {
 
 ns.trimCommentsAndIndentedNewlines = function trimCommentsAndIndentedNewlines(tokens) {
   var cursor = 0;
-  while(tokens[cursor] && (tokens[cursor].type == 'comment' || (tokens[cursor].type == 'newline' && tokens[cursor].indent = true))) ++cursor;
+  while(tokens[cursor] && (tokens[cursor].type == 'comment' || (tokens[cursor].type == 'newline' && tokens[cursor].indent == true))) ++cursor;
   return cursor;
 }
 
