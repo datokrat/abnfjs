@@ -11,7 +11,7 @@ testPackages.forEach(function(pkg) {
       t.run(tools);
     }
     catch(e) {
-      console.log(JSON.stringify({ message: e.message, stack: e.stack, e: e }));
+      console.log(e.stack);
     }
   });
 })

@@ -70,7 +70,7 @@ function Group(baseArg, args /* := inner */) {
   getType: function() { return 'group' },
   getInner: function() { return this.inner },
   getLength: function() { return this.isIgnored() ? 0 : this.inner.getLength() },
-  getString: function() { this.inner ? this.inner.getString() : '' },
+  getString: function() { return this.inner ? this.inner.getString() : '' },
   isIgnored: function() { return this.inner == null },
   getSubordinateDescriptors: function() {
     if(!this.isIgnored()) return this.inner.getDescriptors();

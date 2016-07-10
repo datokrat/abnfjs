@@ -27,10 +27,10 @@ module.exports = { name: 'tokenizer', tests: [
     assertToken(tools, tok[4], 'function-body', tok[4].type == 'function-body');
   } },
   { name: 'evaluator-function-4', run: function (tools) {
-    var str = "expression = 'A' = { return this.getString() } = { return 'change' } ; this is a comment!";
+    var str = "expression = 'A' = { return this.getString() } ; this is a comment!";
     var tok = abnfTokenizer.tokenize(str);
     assertToken(tools, tok[4], 'function-body', tok[4].type == 'function-body');
-    assertToken(tools, tok[5], 'comment', tok[4].type == 'comment');
+    assertToken(tools, tok[5], 'comment', tok[5].type == 'comment');
   } },
 ]}
 

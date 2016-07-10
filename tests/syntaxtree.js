@@ -80,4 +80,10 @@ module.exports = { name: 'syntaxTree', tests: [
     var expr = new syntaxTree.Expression({ evaluateFn: exprFn }, { sequence: [ item ] });
     tools.assertTrue(function() { return item.evaluate() == 'ok' })
   } },
+  { name: '[group].getString', run: function (tools) {
+    var inner = new syntaxTree.StringOrChar({}, { value: "1" });
+    var group = new syntaxTree.Group({}, { inner: inner });
+
+    tools.assertTrue(function() { return group.getString() == "1" });
+  } },
 ]}

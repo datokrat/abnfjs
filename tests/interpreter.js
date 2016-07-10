@@ -62,6 +62,6 @@ module.exports = { name: 'interpreter', tests: [
         [ { type: 'string', value: '/' }, { type: 'group', expression: { type: 'identifier', value: 'a' } } ],
       ]},
     });
-    i.getPattern('a')
+    i.getPattern('a');
   } },
 ]}
